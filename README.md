@@ -2,6 +2,28 @@
 
 Confidence calibration from scratch: ECE/MCE/Brier/NLL metrics, an ASCII reliability table, and temperature scaling fit on validation NLL only - measured on an overconfident small-data MLP. No ML frameworks, no dependencies.
 
+## Use your own classifier logits
+
+```bash
+python -m calibrlab calibrate --input examples/logits.json
+# Or pipe the same JSON schema to stdin:
+cat examples/logits.json | python -m calibrlab calibrate --input -
+```
+
+Input has exactly `validation` and `test` splits, each containing `logits`
+(a list of numeric rows) and `labels` (integer class indices). Both must share
+the same class order. `--lo`, `--hi` and `--step` configure the temperature grid.
+Output is JSON: fitted T, sample counts, validation NLL, test metrics before/
+after and prediction-change count. Invalid inputs exit 2, with an error on
+stderr and no JSON report. This command never trains the synthetic MLP or fits
+on test labels. You must supply genuinely separate splits; schema checks cannot
+detect leaked examples or a mismatched semantic class order.
+
+```python
+from calibrlab.calibrate import calibrate
+report = calibrate(payload)  # same validation/test schema as the CLI
+```
+
 ## What it does
 
 - Builds a deterministic classification fixture: six Gaussian classes in 16 dimensions with enough overlap (noise 0.6) that true uncertainty exists.
@@ -77,7 +99,7 @@ Reliability after:
 - `calibrlab/metrics.py` - accuracy, ECE, MCE, Brier, NLL, reliability table
 - `calibrlab/temp.py` - temperature scaling by validation-NLL grid search (+ oracle reference)
 - `calibrlab/eval.py` - the measured pipeline; `calibrlab/cli.py` - evaluate/gates
-- `tests/` - 22 tests: metric unit tests, gradient verification, fixture regression
+- `tests/` - 29 tests: metric unit tests, gradient verification, fixture regression
 
 ## Honest limitations
 
