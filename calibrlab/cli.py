@@ -1,5 +1,6 @@
 """Command line: evaluate prints the measured report; gates assert on it."""
 import argparse
+import json
 import sys
 
 from .eval import run_evaluation, render
@@ -14,7 +15,27 @@ def main(argv=None):
     g.add_argument("--max-nll-after", type=float, default=None)
     g.add_argument("--max-oracle-gap", type=float, default=None,
                    help="max |test NLL at fitted T - test NLL at oracle T|")
+    c = sub.add_parser("calibrate", help="fit on supplied validation logits and score test")
+    c.add_argument("--input", required=True, help="JSON file, or - for stdin")
+    c.add_argument("--lo", type=float, default=.5)
+    c.add_argument("--hi", type=float, default=10.0)
+    c.add_argument("--step", type=float, default=.05)
     args = parser.parse_args(argv)
+
+    if args.cmd == "calibrate":
+        from .calibrate import calibrate
+        try:
+            if args.input == "-":
+                payload = json.load(sys.stdin)
+            else:
+                with open(args.input, encoding="utf-8") as source:
+                    payload = json.load(source)
+            report = calibrate(payload, args.lo, args.hi, args.step)
+        except (OSError, ValueError, TypeError, OverflowError) as exc:
+            print(f"calibration input error: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(report, sort_keys=True, indent=2, allow_nan=False))
+        return 0
 
     r = run_evaluation()
     if args.cmd == "evaluate":
