@@ -55,7 +55,7 @@ Round-robin finite differences cover both matrices and both bias vectors.
 Tests check every parameter on a tiny model, inject errors into each group,
 and ensure a raised loss restores the original parameters. Grid-search inputs
 are validated before iteration, and integer indexing avoids accumulated step
-rounding. Current suite: 29 tests.
+rounding. Current suite: 37 tests.
 
 ## Caller-supplied logits
 
@@ -69,3 +69,14 @@ when a finite logit is near the float limit and T is below one.
 The tiny external-logits example chooses the upper grid boundary T=10 and
 worsens test NLL from 0.0878 to 0.5762. It is an interface example, not evidence
 of generalization or a guarantee of improvement on caller data.
+
+## Logit-space NLL
+
+Fitting and all pipeline NLL reports use stable log-sum-exp directly from
+logits, not probability-clipped NLL. Eight regression tests cover ordinary
+agreement, wrong-class margin 1000, translation invariance, extreme opposite
+logits, overflow-safe means, grid-size overflow, caller reports, and large-T
+softmax. Losses outside finite float range fail explicitly. Probability-only
+metrics.nll retains its documented 1e-12 floor for compatibility but is not
+used by fitting, fixture reporting, or caller reporting. The fixture numbers
+above remain unchanged at their published precision after this change.
