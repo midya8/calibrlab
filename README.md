@@ -68,16 +68,16 @@ Reliability after:
 
 ## Gates
 
-\`bash examples/demo.sh\` runs the evaluation, asserts the achievable gate set passes (ECE reduction >= 0.10, calibrated NLL <= 1.40, oracle gap <= 0.05, zero accuracy drift), and asserts an impossible gate (ECE reduction >= 0.9) fails - CI fails in both directions.
+`bash examples/demo.sh` runs the evaluation, asserts the achievable gate set passes (ECE reduction >= 0.10, calibrated NLL <= 1.40, oracle gap <= 0.05, zero accuracy drift), and asserts an impossible gate (ECE reduction >= 0.9) fails - CI fails in both directions.
 
 ## Layout
 
-- \`calibrlab/data.py\` - deterministic 6-class Gaussian fixture (train/val/test)
-- \`calibrlab/mlp.py\` - one-hidden-layer MLP, hand-derived gradients, finite-difference check
-- \`calibrlab/metrics.py\` - accuracy, ECE, MCE, Brier, NLL, reliability table
-- \`calibrlab/temp.py\` - temperature scaling by validation-NLL grid search (+ oracle reference)
-- \`calibrlab/eval.py\` - the measured pipeline; \`calibrlab/cli.py\` - evaluate/gates
-- \`tests/\` - 16 tests: metric unit tests, gradient verification, fixture regression
+- `calibrlab/data.py` - deterministic 6-class Gaussian fixture (train/val/test)
+- `calibrlab/mlp.py` - one-hidden-layer MLP, hand-derived gradients, finite-difference check
+- `calibrlab/metrics.py` - accuracy, ECE, MCE, Brier, NLL, reliability table
+- `calibrlab/temp.py` - temperature scaling by validation-NLL grid search (+ oracle reference)
+- `calibrlab/eval.py` - the measured pipeline; `calibrlab/cli.py` - evaluate/gates
+- `tests/` - 16 tests: metric unit tests, gradient verification, fixture regression
 
 ## Honest limitations
 
