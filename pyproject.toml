@@ -1,0 +1,10 @@
+[project]
+name = "calibrlab"
+version = "0.1.0"
+description = "Confidence calibration from scratch: ECE/MCE/Brier/NLL metrics and temperature scaling fit on validation NLL"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
