@@ -20,4 +20,4 @@ fi
 
 echo
 echo "=== caller-supplied logits (separate validation/test) ==="
-python -m calibrlab calibrate --input examples/logits.json
+python -m calibrlab calibrate --input examples/logits.json --bootstrap 200 --seed 13
