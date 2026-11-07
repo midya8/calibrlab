@@ -29,9 +29,8 @@ accuracy so over/under-confidence is visible, not just summarized.
 
 ## Temperature fit
 
-Grid search T in [0.5, 10.0] at 0.05 steps minimizing validation NLL. Coarse
-but transparent; the NLL curve in T is smooth and unimodal on this fixture, so
-the grid lands within a step of the continuous optimum. The oracle row fits T
+Grid search T in [0.5, 10.0] at 0.05 steps minimizing validation NLL. This reports
+the best temperature on that finite grid, not a certified continuous optimum. The oracle row fits T
 on the test split and is labeled unattainable - it exists to quantify what the
 validation fit leaves on the table (0.0076 NLL), not to be used.
 
@@ -42,3 +41,10 @@ Brier 0.7149 -> 0.5964; NLL 2.0030 -> 1.2060 (oracle T = 3.30, NLL 1.1984);
 accuracy 0.5563 unchanged exactly. Pinned in tests as fixture regression.
 Post-scaling bins skew slightly under-confident: one scalar cannot match a
 per-bin curve, which is the honest limitation of the method.
+
+## Development scope
+
+Noise levels 0.5, 0.6, 0.7 and 0.8 were explored during fixture development
+and 0.6 was selected for this demonstration. The test split does not fit T,
+but these are development-fixture results, not an untouched final benchmark.
+No Bayes-optimal accuracy or sampling-uncertainty estimate is computed.
