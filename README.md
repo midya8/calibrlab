@@ -29,6 +29,15 @@ from calibrlab.calibrate import calibrate
 report = calibrate(payload)  # same validation/test schema as the CLI
 ```
 
+## Numerical scoring
+
+Temperature fitting and reported fixture/caller NLL use stable log-sum-exp
+from logits, without a probability floor. A wrong-class margin of 1000 has
+NLL 1000, not a clipped ~27.6. Unrepresentable losses fail with ValueError
+(CLI exit 2) rather than a capped objective or Infinity JSON. The low-level
+probability-only `metrics.nll` retains its documented 1e-12 floor; it is not
+used for fitting or pipeline reports.
+
 ## What it does
 
 - Builds a deterministic classification fixture: six Gaussian classes in 16 dimensions with enough overlap (noise 0.6) that true uncertainty exists.
@@ -104,7 +113,7 @@ Reliability after:
 - `calibrlab/metrics.py` - accuracy, ECE, MCE, Brier, NLL, reliability table
 - `calibrlab/temp.py` - temperature scaling by validation-NLL grid search (+ oracle reference)
 - `calibrlab/eval.py` - the measured pipeline; `calibrlab/cli.py` - evaluate/gates
-- `tests/` - 29 tests: metric unit tests, gradient verification, fixture regression
+- `tests/` - 37 tests: metric unit tests, gradient verification, fixture regression
 
 ## Honest limitations
 
