@@ -55,4 +55,13 @@ Round-robin finite differences cover both matrices and both bias vectors.
 Tests check every parameter on a tiny model, inject errors into each group,
 and ensure a raised loss restores the original parameters. Grid-search inputs
 are validated before iteration, and integer indexing avoids accumulated step
-rounding. Current suite: 22 tests.
+rounding. Current suite: 29 tests.
+
+## Caller-supplied logits
+
+The calibrate API and JSON CLI fit on validation only, then score test. They
+never invoke fixture training or compute the test-grid oracle. Tests change
+only test labels and verify T remains unchanged. Schema checks reject invalid
+values and class dimensions; callers own split independence and class order.
+Softmax subtracts the largest logit before division, avoiding positive overflow
+when a finite logit is near the float limit and T is below one.
