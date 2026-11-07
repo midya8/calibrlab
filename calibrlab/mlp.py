@@ -4,9 +4,13 @@ import random
 
 
 def softmax(logits, temperature=1.0):
-    z = [v / temperature for v in logits]
-    m = max(z)
-    e = [math.exp(v - m) for v in z]
+    if not logits or not math.isfinite(temperature) or temperature <= 0:
+        raise ValueError("logits must be nonempty and temperature finite/positive")
+    if not all(math.isfinite(v) for v in logits):
+        raise ValueError("logits must be finite")
+    m = max(logits)
+    # Subtract before dividing to avoid positive overflow at small T.
+    e = [math.exp((v - m) / temperature) for v in logits]
     s = sum(e)
     return [v / s for v in e]
 
