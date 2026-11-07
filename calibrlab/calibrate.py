@@ -37,22 +37,28 @@ def _scores(probs, labels, logits, temperature=1.0):
             "nll": logits_nll(logits, labels, temperature)}
 
 
-def calibrate(payload, lo=.5, hi=10.0, step=.05):
+def calibrate(payload, lo=.5, hi=10.0, step=.05, bootstrap=0, seed=13):
     """Fit only on validation labels and score on separate test labels.
 
     The caller owns data provenance: this checks schema and class dimensions,
     not whether examples or labels leaked between the supplied splits.
     """
+    if type(bootstrap) is not int or not 0 <= bootstrap <= 10000:
+        raise ValueError("bootstrap must be an integer from 0 to 10000")
+    if type(seed) is not int:
+        raise ValueError("seed must be an integer")
     if not isinstance(payload, dict) or set(payload) != {"validation", "test"}:
         raise ValueError("input must have exactly validation and test splits")
     va, vy, vk = _validate_split(payload["validation"], "validation")
     te, ty, tk = _validate_split(payload["test"], "test")
     if vk != tk:
         raise ValueError("validation and test must share a class dimension/order")
+    if bootstrap * len(ty) > 2000000:
+        raise ValueError("bootstrap exceeds 2000000 sampled test rows")
     temperature, validation_nll = fit_temperature(va, vy, lo, hi, step)
     before = [softmax(row) for row in te]
     after = [softmax(row, temperature) for row in te]
-    return {
+    report = {
         "temperature": temperature,
         "validation_nll": validation_nll,
         "grid": {"lo": lo, "hi": hi, "step": step},
@@ -67,3 +73,8 @@ def calibrate(payload, lo=.5, hi=10.0, step=.05):
                  "Caller must ensure disjoint splits and a common class order. "
                  "ECE/MCE use ten equal-width top-confidence bins.",
     }
+
+    if bootstrap:
+        from .uncertainty import paired_bootstrap
+        report["bootstrap"] = paired_bootstrap(te, ty, before, after, temperature, bootstrap, seed)
+    return report
