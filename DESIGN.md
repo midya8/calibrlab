@@ -65,3 +65,7 @@ only test labels and verify T remains unchanged. Schema checks reject invalid
 values and class dimensions; callers own split independence and class order.
 Softmax subtracts the largest logit before division, avoiding positive overflow
 when a finite logit is near the float limit and T is below one.
+
+The tiny external-logits example chooses the upper grid boundary T=10 and
+worsens test NLL from 0.0878 to 0.5762. It is an interface example, not evidence
+of generalization or a guarantee of improvement on caller data.
