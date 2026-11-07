@@ -20,6 +20,8 @@ def main(argv=None):
     c.add_argument("--lo", type=float, default=.5)
     c.add_argument("--hi", type=float, default=10.0)
     c.add_argument("--step", type=float, default=.05)
+    c.add_argument("--bootstrap", type=int, default=0, help="paired test-row draws, 0 disables")
+    c.add_argument("--seed", type=int, default=13, help="bootstrap seed")
     args = parser.parse_args(argv)
 
     if args.cmd == "calibrate":
@@ -30,7 +32,7 @@ def main(argv=None):
             else:
                 with open(args.input, encoding="utf-8") as source:
                     payload = json.load(source)
-            report = calibrate(payload, args.lo, args.hi, args.step)
+            report = calibrate(payload, args.lo, args.hi, args.step, args.bootstrap, args.seed)
         except (OSError, ValueError, TypeError, OverflowError) as exc:
             print(f"calibration input error: {exc}", file=sys.stderr)
             return 2
