@@ -77,8 +77,17 @@ Reliability after:
 - `calibrlab/metrics.py` - accuracy, ECE, MCE, Brier, NLL, reliability table
 - `calibrlab/temp.py` - temperature scaling by validation-NLL grid search (+ oracle reference)
 - `calibrlab/eval.py` - the measured pipeline; `calibrlab/cli.py` - evaluate/gates
-- `tests/` - 16 tests: metric unit tests, gradient verification, fixture regression
+- `tests/` - 22 tests: metric unit tests, gradient verification, fixture regression
 
 ## Honest limitations
 
 A single scalar temperature is the weakest useful calibrator: it cannot fix a model whose confidence ranking is wrong, only one that is systematically over/under-confident, and it does nothing for accuracy. The fixture is synthetic and small; real calibration work needs per-domain validation data and richer methods (histogram binning, isotonic regression, ensemble recalibration). The oracle row is a reference bound, never a fit target.
+
+## Numerical checks and input safety
+
+The gradient checker samples all four parameter groups (W1, b1, W2, b2) even
+with a cap; `param_cap=None` checks every parameter on a tiny model. Tests
+inject a wrong gradient into each group to prove detection, and a loss failure
+to verify exact parameter restoration. Temperature grids reject zero/negative
+steps, nonfinite bounds, oversized grids, misaligned rows and invalid labels.
+The CLI rejects any nonzero measured accuracy drift.
