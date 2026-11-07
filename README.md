@@ -1,0 +1,84 @@
+# CalibrLab
+
+Confidence calibration from scratch: ECE/MCE/Brier/NLL metrics, an ASCII reliability table, and temperature scaling fit on validation NLL only - measured on an overconfident small-data MLP. No ML frameworks, no dependencies.
+
+## What it does
+
+- Builds a deterministic classification fixture: six Gaussian classes in 16 dimensions with enough overlap (noise 0.6) that true uncertainty exists.
+- Trains a one-hidden-layer MLP (hand-derived backprop, finite-difference verified in the suite) on only 20 samples per class - few enough that it memorizes the training set and its confidence drifts out of calibration.
+- Measures calibration on held-out test data: accuracy, ECE, MCE, Brier score, NLL, plus a per-bin reliability table showing over/under-confidence.
+- Fits a single temperature by grid search on the VALIDATION split's NLL - the test split never influences T - then re-measures everything at the fitted T.
+- Pins the one guarantee temperature scaling makes: accuracy is exactly invariant (argmax is preserved by positive scaling), asserted bit-for-bit in the gates.
+- Reports the oracle reference: the T that would minimize TEST NLL, as an honest bound on what the validation fit leaves on the table.
+
+## Measured results (checked-in fixture, pinned in tests)
+
+```
+CalibrLab evaluation (checked-in fixture, 6 classes x dim 16, noise 0.6)
+
+Train accuracy:                 1.0000   (overfit by design)
+Test accuracy:                  0.5563
+
+Uncalibrated (T=1) vs temperature-scaled (T fit on validation):
+  ECE:    0.2765 -> 0.0651   (reduction +0.2114)
+  MCE:    0.3487 -> 0.1216
+  Brier:  0.7149 -> 0.5964
+  NLL:    2.0030 -> 1.2060
+  Accuracy drift from scaling: 0.000000   (exactly 0 by construction)
+
+Fitted temperature (validation):  T = 3.85   (val NLL 1.3118)
+Oracle temperature (on test):     T = 3.30   (test NLL 1.1984)
+The oracle row is an unattainable reference: fitting on test would leak.
+
+Reliability before:
+  confidence    n    mean_conf  accuracy
+  --------------------------------------------
+  [0.0, 0.1)    0
+  [0.1, 0.2)    0
+  [0.2, 0.3)    1    0.2675     0.0000  OVER
+  [0.3, 0.4)    8    0.3662     0.2500  OVER
+  [0.4, 0.5)   28    0.4656     0.3929  OVER
+  [0.5, 0.6)   37    0.5471     0.4324  OVER
+  [0.6, 0.7)   46    0.6387     0.4130  OVER
+  [0.7, 0.8)   34    0.7423     0.4412  OVER
+  [0.8, 0.9)   70    0.8487     0.5000  OVER
+  [0.9, 1.0)  256    0.9735     0.6602  OVER
+
+Reliability after:
+  confidence    n    mean_conf  accuracy
+  --------------------------------------------
+  [0.0, 0.1)    0
+  [0.1, 0.2)    0
+  [0.2, 0.3)   26    0.2631     0.1923  OVER
+  [0.3, 0.4)  112    0.3486     0.4107  under
+  [0.4, 0.5)  130    0.4471     0.5308  under
+  [0.5, 0.6)   96    0.5467     0.5833  under
+  [0.6, 0.7)   51    0.6431     0.7647  under
+  [0.7, 0.8)   47    0.7446     0.7660  under
+  [0.8, 0.9)   17    0.8369     0.8824  under
+  [0.9, 1.0)    1    0.9073     1.0000  under
+```
+
+## What the fixture shows, stated plainly
+
+- The overfit model is badly overconfident: its top confidence bin averages 0.9735 confidence at 0.6602 accuracy, and ECE is 0.2765.
+- Validation-fitted temperature scaling (T = 3.85) cuts ECE to 0.0651 and test NLL from 2.0030 to 1.2060, at exactly zero accuracy change - that invariance is a property of the method, not a measurement.
+- The validation fit costs little: the test-optimal temperature (3.30) would give NLL 1.1984, so the honest oracle gap is 0.0076.
+- After scaling the model is mildly UNDER-confident in most bins - one scalar cannot match a per-bin curve, and MCE stays higher (0.1216) because small bins are noisy. Both are reported, not smoothed over.
+
+## Gates
+
+\`bash examples/demo.sh\` runs the evaluation, asserts the achievable gate set passes (ECE reduction >= 0.10, calibrated NLL <= 1.40, oracle gap <= 0.05, zero accuracy drift), and asserts an impossible gate (ECE reduction >= 0.9) fails - CI fails in both directions.
+
+## Layout
+
+- \`calibrlab/data.py\` - deterministic 6-class Gaussian fixture (train/val/test)
+- \`calibrlab/mlp.py\` - one-hidden-layer MLP, hand-derived gradients, finite-difference check
+- \`calibrlab/metrics.py\` - accuracy, ECE, MCE, Brier, NLL, reliability table
+- \`calibrlab/temp.py\` - temperature scaling by validation-NLL grid search (+ oracle reference)
+- \`calibrlab/eval.py\` - the measured pipeline; \`calibrlab/cli.py\` - evaluate/gates
+- \`tests/\` - 16 tests: metric unit tests, gradient verification, fixture regression
+
+## Honest limitations
+
+A single scalar temperature is the weakest useful calibrator: it cannot fix a model whose confidence ranking is wrong, only one that is systematically over/under-confident, and it does nothing for accuracy. The fixture is synthetic and small; real calibration work needs per-domain validation data and richer methods (histogram binning, isotonic regression, ensemble recalibration). The oracle row is a reference bound, never a fit target.
