@@ -29,6 +29,28 @@ from calibrlab.calibrate import calibrate
 report = calibrate(payload)  # same validation/test schema as the CLI
 ```
 
+## Paired bootstrap intervals
+
+```bash
+python -m calibrlab calibrate --input examples/logits.json --bootstrap 1000 --seed 13
+```
+
+The Python API accepts the same `bootstrap=1000, seed=13` options. The JSON
+`bootstrap` object includes nominal 95% percentile intervals for accuracy,
+ECE, MCE, Brier and NLL before/after plus paired after-minus-before deltas.
+Each draw resamples identical test indices before and after. T stays fixed
+at its original validation fit. The seeded local RNG does not change global
+random state. Zero draws (the default) omit the object.
+
+These are conditional IID test-row bootstrap intervals, not guaranteed
+coverage or uncertainty from validation fitting/model training. Do not use
+them unchanged for correlated/grouped rows. Tiny samples and binned ECE/MCE
+can produce misleading or degenerate intervals; the two-row example is only
+an interface demonstration. A negative loss/error delta means improvement,
+but an interval is not a claim about a mechanism or future deployment.
+Draws must be integers from 0 to 10000, with at most 2000000 sampled test rows.
+Quantiles use linear interpolation of sorted bootstrap values.
+
 ## Numerical scoring
 
 Temperature fitting and reported fixture/caller NLL use stable log-sum-exp
@@ -113,7 +135,7 @@ Reliability after:
 - `calibrlab/metrics.py` - accuracy, ECE, MCE, Brier, NLL, reliability table
 - `calibrlab/temp.py` - temperature scaling by validation-NLL grid search (+ oracle reference)
 - `calibrlab/eval.py` - the measured pipeline; `calibrlab/cli.py` - evaluate/gates
-- `tests/` - 37 tests: metric unit tests, gradient verification, fixture regression
+- `tests/` - 45 tests: metric unit tests, gradient verification, fixture regression
 
 ## Honest limitations
 
