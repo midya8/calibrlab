@@ -48,3 +48,11 @@ Noise levels 0.5, 0.6, 0.7 and 0.8 were explored during fixture development
 and 0.6 was selected for this demonstration. The test split does not fit T,
 but these are development-fixture results, not an untouched final benchmark.
 No Bayes-optimal accuracy or sampling-uncertainty estimate is computed.
+
+## Verification coverage
+
+Round-robin finite differences cover both matrices and both bias vectors.
+Tests check every parameter on a tiny model, inject errors into each group,
+and ensure a raised loss restores the original parameters. Grid-search inputs
+are validated before iteration, and integer indexing avoids accumulated step
+rounding. Current suite: 22 tests.
