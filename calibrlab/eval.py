@@ -11,7 +11,7 @@
 """
 from .data import make_fixture
 from .mlp import MLP, train, softmax
-from .metrics import accuracy, ece, mce, brier, nll, reliability_table
+from .metrics import accuracy, ece, mce, brier, logits_nll, reliability_table
 from .temp import fit_temperature, fit_temperature_oracle
 
 
@@ -43,8 +43,8 @@ def run_evaluation(seed=13):
         "mce_cal": mce(te_cal, yte),
         "brier_raw": brier(te_raw, yte),
         "brier_cal": brier(te_cal, yte),
-        "nll_raw": nll(te_raw, yte),
-        "nll_cal": nll(te_cal, yte),
+        "nll_raw": logits_nll(te_logits, yte),
+        "nll_cal": logits_nll(te_logits, yte, t_val),
         "t_val": t_val,
         "val_nll_at_t": val_nll,
         "t_oracle": t_oracle,
