@@ -82,25 +82,38 @@ def train(model, xs, ys, epochs=400, lr=0.5):
 
 
 def finite_difference_check(model, xs, ys, eps=1e-5, param_cap=40):
-    """Max |analytic - numeric| gradient over the first param_cap parameters."""
+    """Max gradient error with coverage across all four parameter groups.
+
+    Round-robin sampling prevents a cap from testing only the first matrix.
+    param_cap=None checks every parameter. Perturbations restore exact saved
+    values, including when a loss computation raises.
+    """
+    if eps <= 0 or not math.isfinite(eps):
+        raise ValueError("eps must be finite and positive")
+    if param_cap is not None and param_cap < 4:
+        raise ValueError("param_cap must be at least 4 or None")
     _, (gw1, gb1, gw2, gb2) = loss_and_grads(model, xs, ys)
-    flat = [(gw1, i, j) for i in range(len(gw1)) for j in range(len(gw1[0]))]
-    flat += [(gb1, i, None) for i in range(len(gb1))]
-    flat += [(gw2, i, j) for i in range(len(gw2)) for j in range(len(gw2[0]))]
-    flat += [(gb2, i, None) for i in range(len(gb2))]
-    grids = {id(gw1): model.w1, id(gb1): model.b1, id(gw2): model.w2, id(gb2): model.b2}
+    groups = [
+        [(model.w1, gw1, i, j) for i in range(len(gw1)) for j in range(len(gw1[0]))],
+        [(model.b1, gb1, i, None) for i in range(len(gb1))],
+        [(model.w2, gw2, i, j) for i in range(len(gw2)) for j in range(len(gw2[0]))],
+        [(model.b2, gb2, i, None) for i in range(len(gb2))],
+    ]
+    selected = [group[k] for k in range(max(map(len, groups)))
+                for group in groups if k < len(group)]
+    if param_cap is not None:
+        selected = selected[:param_cap]
     worst = 0.0
-    for g, i, j in flat[:param_cap]:
-        ref = grids[id(g)]
-        if j is None:
-            ref[i] += eps; lp, _ = loss_and_grads(model, xs, ys)
-            ref[i] -= 2 * eps; lm, _ = loss_and_grads(model, xs, ys)
-            ref[i] += eps
-            ana = g[i]
-        else:
-            ref[i][j] += eps; lp, _ = loss_and_grads(model, xs, ys)
-            ref[i][j] -= 2 * eps; lm, _ = loss_and_grads(model, xs, ys)
-            ref[i][j] += eps
-            ana = g[i][j]
+    for ref, grad, i, j in selected:
+        row, idx = (ref, i) if j is None else (ref[i], j)
+        ana = grad[i] if j is None else grad[i][j]
+        saved = row[idx]
+        try:
+            row[idx] = saved + eps
+            lp, _ = loss_and_grads(model, xs, ys)
+            row[idx] = saved - eps
+            lm, _ = loss_and_grads(model, xs, ys)
+        finally:
+            row[idx] = saved
         worst = max(worst, abs(ana - (lp - lm) / (2 * eps)))
     return worst
