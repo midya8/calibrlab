@@ -19,6 +19,11 @@ stderr and no JSON report. This command never trains the synthetic MLP or fits
 on test labels. You must supply genuinely separate splits; schema checks cannot
 detect leaked examples or a mismatched semantic class order.
 
+The tiny JSON example demonstrates the interface, not a successful calibration:
+it selects the upper grid boundary T=10 and worsens test NLL (0.0878 to 0.5762).
+A validation fit can hurt on a different test sample. There is no promised
+improvement on caller data; inspect the reported metrics and grid range.
+
 ```python
 from calibrlab.calibrate import calibrate
 report = calibrate(payload)  # same validation/test schema as the CLI
