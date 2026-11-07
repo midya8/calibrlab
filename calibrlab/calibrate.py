@@ -5,7 +5,7 @@ are integer indices into a common class order shared by both splits.
 """
 import math
 
-from .metrics import accuracy, ece, mce, brier, nll
+from .metrics import accuracy, ece, mce, brier, logits_nll
 from .mlp import softmax
 from .temp import fit_temperature
 
@@ -31,10 +31,10 @@ def _validate_split(split, name):
     return logits, labels, width
 
 
-def _scores(probs, labels):
+def _scores(probs, labels, logits, temperature=1.0):
     return {"accuracy": accuracy(probs, labels), "ece": ece(probs, labels),
             "mce": mce(probs, labels), "brier": brier(probs, labels),
-            "nll": nll(probs, labels)}
+            "nll": logits_nll(logits, labels, temperature)}
 
 
 def calibrate(payload, lo=.5, hi=10.0, step=.05):
@@ -58,8 +58,8 @@ def calibrate(payload, lo=.5, hi=10.0, step=.05):
         "grid": {"lo": lo, "hi": hi, "step": step},
         "samples": {"validation": len(vy), "test": len(ty)},
         "classes": vk,
-        "test_before": _scores(before, ty),
-        "test_after": _scores(after, ty),
+        "test_before": _scores(before, ty, te),
+        "test_after": _scores(after, ty, te, temperature),
         "prediction_changes": sum(max(range(tk), key=row.__getitem__) !=
                                   max(range(tk), key=scaled.__getitem__)
                                   for row, scaled in zip(before, after)),
