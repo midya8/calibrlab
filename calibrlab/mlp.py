@@ -10,7 +10,10 @@ def softmax(logits, temperature=1.0):
         raise ValueError("logits must be finite")
     m = max(logits)
     # Subtract before dividing to avoid positive overflow at small T.
-    e = [math.exp((v - m) / temperature) for v in logits]
+    shifted = [(v - m) / temperature for v in logits]
+    if temperature >= 1 and any(not math.isfinite(v) for v in shifted):
+        shifted = [v / temperature - m / temperature for v in logits]
+    e = [math.exp(v) for v in shifted]
     s = sum(e)
     return [v / s for v in e]
 
