@@ -3,8 +3,7 @@ log-likelihood on held-out validation data. Scaling logits by T recalibrates
 confidence without changing argmax, so accuracy is invariant by construction."""
 import math
 
-from .mlp import softmax
-from .metrics import nll
+from .metrics import logits_nll
 
 
 def fit_temperature(logits_list, ys, lo=0.5, hi=10.0, step=0.05):
@@ -22,13 +21,15 @@ def fit_temperature(logits_list, ys, lo=0.5, hi=10.0, step=0.05):
     if any(not isinstance(y, int) or not 0 <= y < width for y in ys):
         raise ValueError("labels must be valid integer class indices")
     best_t, best_n = None, float("inf")
-    count = int(math.floor((hi - lo) / step + 1e-9)) + 1
+    span = (hi - lo) / step
+    if not math.isfinite(span) or span > 99999:
+        raise ValueError("grid exceeds 100000 candidates")
+    count = int(math.floor(span + 1e-9)) + 1
     if count > 100000:
         raise ValueError("grid exceeds 100000 candidates")
     for index in range(count):
         t = lo + index * step
-        probs = [softmax(z, t) for z in logits_list]
-        cur = nll(probs, ys)
+        cur = logits_nll(logits_list, ys, t)
         if cur < best_n - 1e-12:
             best_t, best_n = t, cur
     return best_t, best_n
