@@ -24,7 +24,7 @@ def main(argv=None):
     failures = []
     if args.min_ece_reduction is not None and r["ece_reduction"] < args.min_ece_reduction:
         failures.append(f"ece_reduction {r['ece_reduction']:.4f} < {args.min_ece_reduction}")
-    if r["acc_drift"] > 1e-9:
+    if r["acc_drift"] != 0.0:
         failures.append(f"accuracy drifted {r['acc_drift']} (must be exactly 0)")
     if args.max_nll_after is not None and r["nll_cal"] > args.max_nll_after:
         failures.append(f"calibrated NLL {r['nll_cal']:.4f} > {args.max_nll_after}")
