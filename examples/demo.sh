@@ -17,3 +17,7 @@ if python -m calibrlab gates --min-ece-reduction 0.9; then
 else
     echo "impossible gate set failed as expected"
 fi
+
+echo
+echo "=== caller-supplied logits (separate validation/test) ==="
+python -m calibrlab calibrate --input examples/logits.json
