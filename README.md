@@ -149,3 +149,44 @@ inject a wrong gradient into each group to prove detection, and a loss failure
 to verify exact parameter restoration. Temperature grids reject zero/negative
 steps, nonfinite bounds, oversized grids, misaligned rows and invalid labels.
 The CLI rejects any nonzero measured accuracy drift.
+
+
+## v0.2: score and bin-migration ledger
+
+The [live score ledger](https://midya8.github.io/calibrlab/) exposes every
+row's stable logit NLL and class Brier terms, all confidence-bin gaps and ECE
+contributions, before/selected bin migration, and every fixed-temperature
+row deletion. Choose2..20bins or a temperature in0.1..20; the validation fit
+still uses only the original191-point NLL grid. A19-point descriptive path
+shows validation/test NLL without recommending a test-chosen temperature.
+
+Five public synthetic controls retain all original240validation/480test
+logits and the unchanged report, the adverse caller example, uniform ties,
+within-bin cancellation and singleton underflow. All493positions are
+inspectable. Copy/download includes the full input and native-compatible
+report, not just a selected row. Inputs stay in the page; no paid API.
+
+```bash
+python -m calibrlab score-audit --input examples/logits.json --temperature 10
+python -m calibrlab score-demo
+node --test tests/*.cjs
+bash examples/verify_wheel.sh
+```
+
+56Python tests (original45unchanged) and four Node/actual-Chrome tests check
+95native/browser witnesses,9,367row/deletion records,55,328class Brier terms,
+160independent70-digit Decimal games and80integer/uniform controls. Installed
+wheel reproduction rebuilds the original full training/logits/report and all
+95witnesses outside checkout, imports7modules and runs all5commands.
+
+These are standard temperature scaling and proper-score formulas, not a new
+calibration method. ECE/MCE depend on bins and only the top class; NLL/Brier
+are not calibration-only measures. Fixed-temperature deletion is not refitting,
+causality or uncertainty. Binary64/endpoint limits remain explicit. The
+original45tests, model/data/trainer/metrics/grid/bootstraps and all original
+results above are unchanged. See [LEDGER.md](LEDGER.md) for equations, input
+bounds, schema, reproduction, six primary/reference sources and limits.
+
+The original overview's oracle gap0.0076 subtracts its displayed rounded NLLs.
+The unchanged full-precision gap is0.007543134492483228, shown as0.0075 in the
+new ledger; this is a display-precision distinction, not a changed result.
