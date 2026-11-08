@@ -22,7 +22,38 @@ def main(argv=None):
     c.add_argument("--step", type=float, default=.05)
     c.add_argument("--bootstrap", type=int, default=0, help="paired test-row draws, 0 disables")
     c.add_argument("--seed", type=int, default=13, help="bootstrap seed")
+    audit = sub.add_parser("score-audit", help="bounded score/bin-migration ledger")
+    audit.add_argument("--input", required=True, help="validation/test JSON, or -")
+    audit.add_argument("--temperature", type=float, default=1.)
+    audit.add_argument("--bins", type=int, default=10)
+    sub.add_parser("score-demo", help="public controls and unchanged original report")
     args = parser.parse_args(argv)
+
+    if args.cmd == "score-demo":
+        from .ledger_fixtures import fixtures
+        print(json.dumps(fixtures(), sort_keys=True, indent=2, allow_nan=False))
+        return 0
+    if args.cmd == "score-audit":
+        from .ledger import ledger
+        def unique_pairs(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError("duplicate JSON key: " + key)
+                result[key] = value
+            return result
+        try:
+            if args.input == "-":
+                payload = json.load(sys.stdin, object_pairs_hook=unique_pairs)
+            else:
+                with open(args.input, encoding="utf-8") as source:
+                    payload = json.load(source, object_pairs_hook=unique_pairs)
+            report = ledger(payload, args.temperature, args.bins)
+        except (OSError, ValueError, TypeError, OverflowError) as exc:
+            print(f"score audit input error: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(report, sort_keys=True, indent=2, allow_nan=False))
+        return 0
 
     if args.cmd == "calibrate":
         from .calibrate import calibrate
