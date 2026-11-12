@@ -40,7 +40,7 @@ ECE 0.2765 -> 0.0651 (T = 3.85 fit on validation); MCE 0.3487 -> 0.1216;
 Brier 0.7149 -> 0.5964; NLL 2.0030 -> 1.2060 (oracle T = 3.30, NLL 1.1984);
 accuracy 0.5563 unchanged exactly. Pinned in tests as fixture regression.
 Post-scaling bins skew slightly under-confident: one scalar cannot match a
-per-bin curve, which is the honest limitation of the method.
+per-bin curve, which illustrates the limit of one scalar temperature.
 
 ## Development scope
 
@@ -55,7 +55,7 @@ Round-robin finite differences cover both matrices and both bias vectors.
 Tests check every parameter on a tiny model, inject errors into each group,
 and ensure a raised loss restores the original parameters. Grid-search inputs
 are validated before iteration, and integer indexing avoids accumulated step
-rounding. Current suite: 45 tests.
+rounding. The earlier suite had 45 tests; the current 56-test suite retains them and adds the score-ledger checks in LEDGER.md.
 
 ## Caller-supplied logits
 

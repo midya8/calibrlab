@@ -1,6 +1,13 @@
 # CalibrLab
 
-Confidence calibration from scratch: ECE/MCE/Brier/NLL metrics, an ASCII reliability table, and temperature scaling fit on validation NLL only - measured on an overconfident small-data MLP. No ML frameworks, no dependencies.
+Fit a temperature on validation logits, then inspect what changed on a separate
+test split. CalibrLab reports accuracy, ECE, MCE, Brier score, logit-space NLL,
+reliability bins and paired bootstrap intervals. A separate score ledger shows
+row losses and bin migration.
+
+Python uses only the standard library. The included synthetic MLP fixture
+shows a useful validation fit; a separate caller example gets worse. They are
+development controls, not a promise that calibration improves new data.
 
 ## Use your own classifier logits
 
@@ -60,12 +67,12 @@ NLL 1000, not a clipped ~27.6. Unrepresentable losses fail with ValueError
 probability-only `metrics.nll` retains its documented 1e-12 floor; it is not
 used for fitting or pipeline reports.
 
-## What it does
+## The included training fixture
 
 - Builds a deterministic classification fixture: six Gaussian classes in 16 dimensions with enough overlap (noise 0.6) that true uncertainty exists.
 - Trains a one-hidden-layer MLP (hand-derived backprop, finite-difference verified in the suite) on only 20 samples per class - few enough that it memorizes the training set and its confidence drifts out of calibration.
 - Measures calibration on held-out test data: accuracy, ECE, MCE, Brier score, NLL, plus a per-bin reliability table showing over/under-confidence.
-- Fits a single temperature by grid search on the VALIDATION split's NLL - the test split never influences T - then re-measures everything at the fitted T.
+- Fits a single temperature by grid search on the validation split's NLL - the test split never influences T - then re-measures everything at the fitted T.
 - Pins the one guarantee temperature scaling makes: accuracy is exactly invariant (argmax is preserved by positive scaling), asserted bit-for-bit in the gates.
 - Reports the oracle reference: the T that would minimize TEST NLL, as an honest bound on what the validation fit leaves on the table.
 
@@ -117,12 +124,12 @@ Reliability after:
   [0.9, 1.0)    1    0.9073     1.0000  under
 ```
 
-## What the fixture shows, stated plainly
+## Reading the fixture results
 
 - The overfit model is badly overconfident: its top confidence bin averages 0.9735 confidence at 0.6602 accuracy, and ECE is 0.2765.
 - Validation-fitted temperature scaling (T = 3.85) cuts ECE to 0.0651 and test NLL from 2.0030 to 1.2060, at exactly zero accuracy change - that invariance is a property of the method, not a measurement.
-- The validation fit costs little: the test-optimal temperature (3.30) would give NLL 1.1984, so the honest oracle gap is 0.0076.
-- After scaling the model is mildly UNDER-confident in most bins - one scalar cannot match a per-bin curve, and MCE stays higher (0.1216) because small bins are noisy. Both are reported, not smoothed over.
+- The test-grid oracle temperature (3.30) would give NLL 1.1984, giving a rounded oracle gap of 0.0076.
+- After scaling the model is mildly under-confident in most bins - one scalar cannot match a per-bin curve, and MCE stays higher (0.1216) because small bins are noisy. Both are reported, not smoothed over.
 
 ## Gates
 
@@ -135,9 +142,9 @@ Reliability after:
 - `calibrlab/metrics.py` - accuracy, ECE, MCE, Brier, NLL, reliability table
 - `calibrlab/temp.py` - temperature scaling by validation-NLL grid search (+ oracle reference)
 - `calibrlab/eval.py` - the measured pipeline; `calibrlab/cli.py` - evaluate/gates
-- `tests/` - 45 tests: metric unit tests, gradient verification, fixture regression
+- `tests/` - 56 tests, retaining the earlier 45 metric/gradient/fixture tests and adding score-ledger checks
 
-## Honest limitations
+## Limits
 
 A single scalar temperature is the weakest useful calibrator: it cannot fix a model whose confidence ranking is wrong, only one that is systematically over/under-confident, and it does nothing for accuracy. The fixture is synthetic and small; real calibration work needs per-domain validation data and richer methods (histogram binning, isotonic regression, ensemble recalibration). The oracle row is a reference bound, never a fit target.
 
@@ -156,13 +163,13 @@ The CLI rejects any nonzero measured accuracy drift.
 The [live score ledger](https://midya8.github.io/calibrlab/) exposes every
 row's stable logit NLL and class Brier terms, all confidence-bin gaps and ECE
 contributions, before/selected bin migration, and every fixed-temperature
-row deletion. Choose2..20bins or a temperature in0.1..20; the validation fit
-still uses only the original191-point NLL grid. A19-point descriptive path
+row deletion. Choose 2..20 bins or a temperature in 0.1..20; the validation fit
+still uses only the original 191-point NLL grid. A 19-point descriptive path
 shows validation/test NLL without recommending a test-chosen temperature.
 
-Five public synthetic controls retain all original240validation/480test
+Five public synthetic controls retain all original 240 validation / 480 test
 logits and the unchanged report, the adverse caller example, uniform ties,
-within-bin cancellation and singleton underflow. All493positions are
+within-bin cancellation and singleton underflow. All 493 positions are
 inspectable. Copy/download includes the full input and native-compatible
 report, not just a selected row. Inputs stay in the page; no paid API.
 
@@ -173,20 +180,20 @@ node --test tests/*.cjs
 bash examples/verify_wheel.sh
 ```
 
-56Python tests (original45unchanged) and four Node/actual-Chrome tests check
-95native/browser witnesses,9,367row/deletion records,55,328class Brier terms,
-160independent70-digit Decimal games and80integer/uniform controls. Installed
+56 Python tests (original 45 unchanged) and four Node/actual-Chrome tests check
+95 native/browser witnesses, 9,367 row/deletion records, 55,328 class Brier terms,
+160 independent 70-digit Decimal games and 80 integer/uniform controls. Installed
 wheel reproduction rebuilds the original full training/logits/report and all
-95witnesses outside checkout, imports7modules and runs all5commands.
+95 witnesses outside checkout, imports 7 modules and runs all 5 commands.
 
 These are standard temperature scaling and proper-score formulas, not a new
 calibration method. ECE/MCE depend on bins and only the top class; NLL/Brier
 are not calibration-only measures. Fixed-temperature deletion is not refitting,
 causality or uncertainty. Binary64/endpoint limits remain explicit. The
-original45tests, model/data/trainer/metrics/grid/bootstraps and all original
+original 45 tests, model/data/trainer/metrics/grid/bootstraps and all original
 results above are unchanged. See [LEDGER.md](LEDGER.md) for equations, input
 bounds, schema, reproduction, six primary/reference sources and limits.
 
-The original overview's oracle gap0.0076 subtracts its displayed rounded NLLs.
-The unchanged full-precision gap is0.007543134492483228, shown as0.0075 in the
+The original overview's oracle gap 0.0076 subtracts its displayed rounded NLLs.
+The unchanged full-precision gap is 0.007543134492483228, shown as 0.0075 in the
 new ledger; this is a display-precision distinction, not a changed result.
