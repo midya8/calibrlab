@@ -37,5 +37,14 @@ assert a['delta']['nll']>0
 assert len(d['cases'])==5
 assert '1.0000' in open('evaluate.txt').read()
 assert 'all gates passed' in open('gates.txt').read()
-print('All5commands execute; adverse caller outcome and validation-only fit checked')
+from calibrlab.calibrate import calibrate
+near_tie = {'validation': {'logits': [[0., 1., 0.]], 'labels': [1]},
+            'test': {'logits': [[0., 1e-16, 0.]], 'labels': [1]}}
+r = calibrate(near_tie, lo=10, hi=10, bootstrap=13)
+assert r['prediction_changes'] == 0
+assert r['test_before']['accuracy'] == r['test_after']['accuracy'] == 1
+assert abs(r['test_after']['ece'] - 2 / 3) < 1e-15
+assert r['bootstrap']['intervals']['accuracy']['after'] == [1., 1.]
+assert r['bootstrap']['intervals']['accuracy']['delta_after_minus_before'] == [0., 0.]
+print('All5commands execute; adverse caller outcome, validation-only fit and rounded-tie bootstrap checked')
 PY
