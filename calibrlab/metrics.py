@@ -3,22 +3,32 @@ reliability table. All computed from probability vectors and true labels."""
 import math
 
 
-def accuracy(probs_list, ys):
-    correct = sum(1 for p, y in zip(probs_list, ys) if max(range(len(p)), key=lambda i: p[i]) == y)
-    return correct / len(ys)
+def _decisions(probs_list, predictions):
+    if predictions is None:
+        return [max(range(len(p)), key=p.__getitem__) for p in probs_list]
+    if len(predictions) != len(probs_list) or any(
+            type(k) is not int or not 0 <= k < len(p)
+            for p, k in zip(probs_list, predictions)):
+        raise ValueError("predictions must align with rows and index their classes")
+    return predictions
 
 
-def _conf_correct(probs_list, ys):
+def accuracy(probs_list, ys, *, predictions=None):
+    """Accuracy using supplied decisions, or first probability maxima by default."""
+    decisions = _decisions(probs_list, predictions)
+    return sum(k == y for k, y in zip(decisions, ys)) / len(ys)
+
+
+def _conf_correct(probs_list, ys, predictions=None):
     pairs = []
-    for p, y in zip(probs_list, ys):
-        k = max(range(len(p)), key=lambda i: p[i])
+    for p, y, k in zip(probs_list, ys, _decisions(probs_list, predictions)):
         pairs.append((p[k], 1.0 if k == y else 0.0))
     return pairs
 
 
-def ece(probs_list, ys, n_bins=10):
-    """Expected Calibration Error with equal-width bins over [0, 1]."""
-    pairs = _conf_correct(probs_list, ys)
+def ece(probs_list, ys, n_bins=10, *, predictions=None):
+    """Equal-width top-confidence ECE; optional decisions override rounded argmax."""
+    pairs = _conf_correct(probs_list, ys, predictions)
     n = len(pairs)
     total = 0.0
     for b in range(n_bins):
@@ -32,9 +42,9 @@ def ece(probs_list, ys, n_bins=10):
     return total
 
 
-def mce(probs_list, ys, n_bins=10):
-    """Maximum Calibration Error across occupied equal-width bins."""
-    pairs = _conf_correct(probs_list, ys)
+def mce(probs_list, ys, n_bins=10, *, predictions=None):
+    """Maximum occupied-bin gap; optional decisions override rounded argmax."""
+    pairs = _conf_correct(probs_list, ys, predictions)
     worst = 0.0
     for b in range(n_bins):
         lo, hi = b / n_bins, (b + 1) / n_bins

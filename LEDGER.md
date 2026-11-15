@@ -2,8 +2,10 @@
 
 This is an inspection layer over standard temperature scaling and proper-score
 losses. It is not a new calibration method, uncertainty interval or deployment
-rule. Existing model/data/training/evaluation/metrics/temperature-fit/bootstraps
-and the original 45 tests are unchanged.
+rule. The score-ledger implementation and its witnesses are unchanged. The original
+model/data/training/evaluation/temperature fit and 56 tests remain. The caller
+and paired-bootstrap classification scores now retain original logit decisions
+at rounded probability ties, matching the ledger. See the README regression note.
 
 ## Native API and commands
 

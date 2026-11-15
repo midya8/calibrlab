@@ -24,6 +24,7 @@ def paired_bootstrap(logits, labels, before, after, temperature, draws, seed):
     """
     rng = random.Random(seed)
     n = len(labels)
+    decisions = [max(range(len(row)), key=row.__getitem__) for row in logits]
     metrics = {'accuracy': accuracy, 'ece': ece, 'mce': mce, 'brier': brier}
     samples = {name: {'before': [], 'after': [], 'delta_after_minus_before': []}
                for name in (*metrics, 'nll')}
@@ -35,7 +36,9 @@ def paired_bootstrap(logits, labels, before, after, temperature, draws, seed):
         raw = [before[i] for i in indices]
         scaled = [after[i] for i in indices]
         for name, function in metrics.items():
-            a, b = function(raw, ys), function(scaled, ys)
+            kwargs = ({'predictions': [decisions[i] for i in indices]}
+                      if name in ('accuracy', 'ece', 'mce') else {})
+            a, b = function(raw, ys, **kwargs), function(scaled, ys, **kwargs)
             samples[name]['before'].append(a)
             samples[name]['after'].append(b)
             samples[name]['delta_after_minus_before'].append(b - a)

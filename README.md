@@ -142,7 +142,7 @@ Reliability after:
 - `calibrlab/metrics.py` - accuracy, ECE, MCE, Brier, NLL, reliability table
 - `calibrlab/temp.py` - temperature scaling by validation-NLL grid search (+ oracle reference)
 - `calibrlab/eval.py` - the measured pipeline; `calibrlab/cli.py` - evaluate/gates
-- `tests/` - 56 tests, retaining the earlier 45 metric/gradient/fixture tests and adding score-ledger checks
+- `tests/` - 62 tests, including the earlier 56 and six rounded-tie decision checks
 
 ## Limits
 
@@ -180,7 +180,7 @@ node --test tests/*.cjs
 bash examples/verify_wheel.sh
 ```
 
-56 Python tests (original 45 unchanged) and four Node/actual-Chrome tests check
+62 Python tests (the earlier 56 unchanged) and four Node/actual-Chrome tests check
 95 native/browser witnesses, 9,367 row/deletion records, 55,328 class Brier terms,
 160 independent 70-digit Decimal games and 80 integer/uniform controls. Installed
 wheel reproduction rebuilds the original full training/logits/report and all
@@ -190,10 +190,36 @@ These are standard temperature scaling and proper-score formulas, not a new
 calibration method. ECE/MCE depend on bins and only the top class; NLL/Brier
 are not calibration-only measures. Fixed-temperature deletion is not refitting,
 causality or uncertainty. Binary64/endpoint limits remain explicit. The
-original 45 tests, model/data/trainer/metrics/grid/bootstraps and all original
-results above are unchanged. See [LEDGER.md](LEDGER.md) for equations, input
+original 56 tests, model/data/trainer/grid and all original fixture results above
+are unchanged. Caller and bootstrap classification scores now keep original
+logit decisions at rounded probability ties, as described below. See [LEDGER.md](LEDGER.md) for equations, input
 bounds, schema, reproduction, six primary/reference sources and limits.
 
 The original overview's oracle gap 0.0076 subtracts its displayed rounded NLLs.
 The unchanged full-precision gap is 0.007543134492483228, shown as 0.0075 in the
 new ledger; this is a display-precision distinction, not a changed result.
+
+## Rounded probabilities do not choose the class
+
+`calibrate` and its paired bootstrap use the first maximum of the supplied
+logits for classification decisions before and after positive temperature
+scaling. Accuracy, ECE and MCE use those decisions. Confidence, Brier and NLL
+still use the original probability/loss arithmetic; probabilities are not
+perturbed to force a ranking.
+
+For example, logits `[0, 1e-16, 0]` select class 1. At T=10 their binary64
+softmax is `[1/3, 1/3, 1/3]`. Earlier caller/bootstrap reports picked class 0
+from that rounded vector, falsely showing an accuracy change. The score ledger
+already used logit decisions. The caller and bootstrap now agree with that
+convention, including true ties (first maximum), subnormal gaps and resampled
+rows. `prediction_changes` is zero for the fixed logit classifier at positive T;
+it does not measure disagreements from sorting rounded exported probabilities.
+
+Probability-only `metrics.accuracy`, `ece` and `mce` keep their old first-max
+behavior by default. Their optional keyword `predictions=[...]` accepts aligned
+integer class indices when a caller already has classifier decisions. It does
+not validate that those decisions came from logits or are optimal. The new six
+regression tests check the concrete failure, tiny/true ties at six temperatures,
+explicit decisions, direct paired resampling, CLI output and unchanged proper
+losses/validation fitting. This fixes numerical decision bookkeeping, not
+calibration quality or uncertainty coverage.
