@@ -32,8 +32,12 @@ def _validate_split(split, name):
 
 
 def _scores(probs, labels, logits, temperature=1.0):
-    return {"accuracy": accuracy(probs, labels), "ece": ece(probs, labels),
-            "mce": mce(probs, labels), "brier": brier(probs, labels),
+    # Positive scaling preserves the original logit decision. Rounded softmax
+    # vectors can have new ties, so they must not choose a different class.
+    decisions = [max(range(len(row)), key=row.__getitem__) for row in logits]
+    return {"accuracy": accuracy(probs, labels, predictions=decisions),
+            "ece": ece(probs, labels, predictions=decisions),
+            "mce": mce(probs, labels, predictions=decisions), "brier": brier(probs, labels),
             "nll": logits_nll(logits, labels, temperature)}
 
 
@@ -66,11 +70,10 @@ def calibrate(payload, lo=.5, hi=10.0, step=.05, bootstrap=0, seed=13):
         "classes": vk,
         "test_before": _scores(before, ty, te),
         "test_after": _scores(after, ty, te, temperature),
-        "prediction_changes": sum(max(range(tk), key=row.__getitem__) !=
-                                  max(range(tk), key=scaled.__getitem__)
-                                  for row, scaled in zip(before, after)),
+        "prediction_changes": 0,  # Same first-maximum logit decisions at every T > 0.
         "scope": "Temperature fit on validation only; test used for scoring. "
                  "Caller must ensure disjoint splits and a common class order. "
+                 "Decisions use first maxima of original logits, not rounded probabilities. "
                  "ECE/MCE use ten equal-width top-confidence bins.",
     }
 
