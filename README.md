@@ -1,7 +1,7 @@
-# CalibrLab
+# Confidence calibration
 
 Fit a temperature on validation logits, then inspect what changed on a separate
-test split. CalibrLab reports accuracy, ECE, MCE, Brier score, logit-space NLL,
+test split. Confidence calibration reports accuracy, ECE, MCE, Brier score, logit-space NLL,
 reliability bins and paired bootstrap intervals. A separate score ledger shows
 row losses and bin migration.
 
@@ -160,7 +160,7 @@ The CLI rejects any nonzero measured accuracy drift.
 
 ## v0.2: score and bin-migration ledger
 
-The [live score ledger](https://midya8.github.io/calibrlab/) exposes every
+The [live score ledger](https://midya8.github.io/confidence-calibration/) exposes every
 row's stable logit NLL and class Brier terms, all confidence-bin gaps and ECE
 contributions, before/selected bin migration, and every fixed-temperature
 row deletion. Choose 2..20 bins or a temperature in 0.1..20; the validation fit
